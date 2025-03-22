@@ -6,12 +6,13 @@ const router = express.Router();
 
 router.get('/generate', async (req, res) => {
     try {
-        let testTopic = `PitchMint: Crude Brainstorm → Clutch Collaboration (Idea-to-Pitch Platform)
-                        Concept: An online workspace where a user can dump random ideas or partially formed concepts, and the platform uses AI or structured templates to develop them into a clear, “clutch” pitch or project plan.
-                        “Crude” Aspect: Disorganized brainstorming—lots of half-baked ideas, bullet points, and scattered thoughts.
-                        “Clutch” Outcome: A polished outline or pitch deck with well-defined milestones, tasks, and roles, ready to present to stakeholders or judges."`
+        if (!req.body.topic) {
+            return res.status(400).json({ message: 'Topic is required in the request body' });
+        }
 
-        let pdfPath = await createAndExportPresentation(testTopic);
+        const topic = req.body.topic;
+
+        let pdfPath = await createAndExportPresentation(topic);
         res.json({message: pdfPath });
     } catch (error) {
         console.error('Error generating slides:', error);
