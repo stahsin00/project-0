@@ -117,6 +117,12 @@ input[type=text], textarea {
   resize: none;
 }
 
+.myPDF {
+  width: 75%;
+  margin: auto;
+  margin-bottom: 50px;
+}
+
 footer ul li {
   float: left;
 }
