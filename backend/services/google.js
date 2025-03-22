@@ -26,7 +26,6 @@ async function createPresentation(authClient, content) {
     try {
       const slides = google.slides({ version: 'v1', auth: authClient });
       
-      // First, create a new presentation
       const presentation = await slides.presentations.create({
         requestBody: {
           title: content.title
@@ -40,115 +39,226 @@ async function createPresentation(authClient, content) {
         presentationId: presentationId
       });
       
+      let requests = [];
+      
       if (presentationDetails.data.slides && presentationDetails.data.slides.length > 0) {
-        console.log('First slide structure:', JSON.stringify(presentationDetails.data.slides[0], null, 2));
+        const titleSlideId = presentationDetails.data.slides[0].objectId;
+        
+        requests.push(
+          {
+            createShape: {
+              objectId: 'titleTextBox',
+              shapeType: 'TEXT_BOX',
+              elementProperties: {
+                pageObjectId: titleSlideId,
+                size: {
+                  width: { magnitude: 600, unit: 'PT' },
+                  height: { magnitude: 100, unit: 'PT' }
+                },
+                transform: {
+                  scaleX: 1,
+                  scaleY: 1,
+                  translateX: 50,
+                  translateY: 100,
+                  unit: 'PT'
+                }
+              }
+            }
+          },
+          {
+            insertText: {
+              objectId: 'titleTextBox',
+              insertionIndex: 0,
+              text: content.title
+            }
+          },
+          {
+            updateTextStyle: {
+              objectId: 'titleTextBox',
+              textRange: {
+                type: 'ALL'
+              },
+              style: {
+                fontSize: {
+                  magnitude: 36,
+                  unit: 'PT'
+                },
+                bold: true
+              },
+              fields: 'fontSize,bold'
+            }
+          },
+          {
+            createShape: {
+              objectId: 'subtitleTextBox',
+              shapeType: 'TEXT_BOX',
+              elementProperties: {
+                pageObjectId: titleSlideId,
+                size: {
+                  width: { magnitude: 600, unit: 'PT' },
+                  height: { magnitude: 60, unit: 'PT' }
+                },
+                transform: {
+                  scaleX: 1,
+                  scaleY: 1,
+                  translateX: 50,
+                  translateY: 200,
+                  unit: 'PT'
+                }
+              }
+            }
+          },
+          {
+            insertText: {
+              objectId: 'subtitleTextBox',
+              insertionIndex: 0,
+              text: content.subtitle
+            }
+          },
+          {
+            updateTextStyle: {
+              objectId: 'subtitleTextBox',
+              textRange: {
+                type: 'ALL'
+              },
+              style: {
+                fontSize: {
+                  magnitude: 20,
+                  unit: 'PT'
+                }
+              },
+              fields: 'fontSize'
+            }
+          }
+        );
       }
       
-      const requests = [
-        {
-          createShape: {
-            objectId: 'titleTextBox',
-            shapeType: 'TEXT_BOX',
-            elementProperties: {
-              pageObjectId: presentationDetails.data.slides[0].objectId,
-              size: {
-                width: { magnitude: 600, unit: 'PT' },
-                height: { magnitude: 100, unit: 'PT' }
-              },
-              transform: {
-                scaleX: 1,
-                scaleY: 1,
-                translateX: 50,
-                translateY: 100,
-                unit: 'PT'
+      if (content.slides && Array.isArray(content.slides)) {
+        content.slides.forEach((slide, index) => {
+          const slideId = `slide${index + 2}`;
+          const titleId = `title${slideId}`;
+          const contentId = `content${slideId}`;
+          
+          requests.push({
+            createSlide: {
+              objectId: slideId,
+              insertionIndex: index + 1,
+              slideLayoutReference: {
+                predefinedLayout: 'BLANK'
               }
             }
-          }
-        },
-        {
-          insertText: {
-            objectId: 'titleTextBox',
-            insertionIndex: 0,
-            text: content.title
-          }
-        },
-        {
-          updateTextStyle: {
-            objectId: 'titleTextBox',
-            textRange: {
-              type: 'ALL'
-            },
-            style: {
-              fontSize: {
-                magnitude: 36,
-                unit: 'PT'
-              },
-              bold: true
-            },
-            fields: 'fontSize,bold'
-          }
-        },
-        {
-          createShape: {
-            objectId: 'subtitleTextBox',
-            shapeType: 'TEXT_BOX',
-            elementProperties: {
-              pageObjectId: presentationDetails.data.slides[0].objectId,
-              size: {
-                width: { magnitude: 600, unit: 'PT' },
-                height: { magnitude: 60, unit: 'PT' }
-              },
-              transform: {
-                scaleX: 1,
-                scaleY: 1,
-                translateX: 50,
-                translateY: 200,
-                unit: 'PT'
-              }
-            }
-          }
-        },
-        {
-          insertText: {
-            objectId: 'subtitleTextBox',
-            insertionIndex: 0,
-            text: content.subtitle
-          }
-        },
-        {
-          updateTextStyle: {
-            objectId: 'subtitleTextBox',
-            textRange: {
-              type: 'ALL'
-            },
-            style: {
-              fontSize: {
-                magnitude: 20,
-                unit: 'PT'
+          });
+          
+          requests.push(
+            {
+              createShape: {
+                objectId: titleId,
+                shapeType: 'TEXT_BOX',
+                elementProperties: {
+                  pageObjectId: slideId,
+                  size: {
+                    width: { magnitude: 600, unit: 'PT' },
+                    height: { magnitude: 50, unit: 'PT' }
+                  },
+                  transform: {
+                    scaleX: 1,
+                    scaleY: 1,
+                    translateX: 50,
+                    translateY: 50,
+                    unit: 'PT'
+                  }
+                }
               }
             },
-            fields: 'fontSize'
-          }
-        },
-        {
-          createSlide: {
-            objectId: 'slide2',
-            insertionIndex: 1,
-            slideLayoutReference: {
-              predefinedLayout: 'BLANK'
+            {
+              insertText: {
+                objectId: titleId,
+                insertionIndex: 0,
+                text: slide.title
+              }
+            },
+            {
+              updateTextStyle: {
+                objectId: titleId,
+                textRange: {
+                  type: 'ALL'
+                },
+                style: {
+                  fontSize: {
+                    magnitude: 24,
+                    unit: 'PT'
+                  },
+                  bold: true
+                },
+                fields: 'fontSize,bold'
+              }
             }
+          );
+          
+          if (slide.content && Array.isArray(slide.content)) {
+            const bulletContent = slide.content.join('\\n• ');
+            
+            requests.push(
+              {
+                createShape: {
+                  objectId: contentId,
+                  shapeType: 'TEXT_BOX',
+                  elementProperties: {
+                    pageObjectId: slideId,
+                    size: {
+                      width: { magnitude: 600, unit: 'PT' },
+                      height: { magnitude: 300, unit: 'PT' }
+                    },
+                    transform: {
+                      scaleX: 1,
+                      scaleY: 1,
+                      translateX: 50,
+                      translateY: 120,
+                      unit: 'PT'
+                    }
+                  }
+                }
+              },
+              {
+                insertText: {
+                  objectId: contentId,
+                  insertionIndex: 0,
+                  text: `• ${bulletContent}`
+                }
+              },
+              {
+                updateTextStyle: {
+                  objectId: contentId,
+                  textRange: {
+                    type: 'ALL'
+                  },
+                  style: {
+                    fontSize: {
+                      magnitude: 18,
+                      unit: 'PT'
+                    }
+                  },
+                  fields: 'fontSize'
+                }
+              }
+            );
           }
-        }
-      ];
+        });
+      }
       
-      await slides.presentations.batchUpdate({
-        presentationId: presentationId,
-        requestBody: {
-          requests: requests
-        }
-      });
+      const batchSize = 20;
+      for (let i = 0; i < requests.length; i += batchSize) {
+        const batch = requests.slice(i, i + batchSize);
+        await slides.presentations.batchUpdate({
+          presentationId: presentationId,
+          requestBody: {
+            requests: batch
+          }
+        });
+        console.log(`Processed batch ${Math.floor(i/batchSize) + 1} of ${Math.ceil(requests.length/batchSize)}`);
+      }
       
-      console.log('Slide content updated with OpenAI generated content');
+      console.log('All slides created and populated with content');
       return presentationId;
     } catch (error) {
       console.error('Failed to create or update presentation:', error.message);
