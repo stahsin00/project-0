@@ -28,6 +28,12 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+a {
+  font-weight: 500;
+  color: #B4C8D4;
+  text-decoration: inherit;
+}
+
 body {
   /* Light minty green */
   background-color: #BDE0C4;
@@ -91,9 +97,18 @@ button:hover {
   
   list-style-type: none;
   float: left;
-  margin-top: 6px;
+  margin-top: 6.5px;
   margin-left: 10px;
 }
 .tabBut:first-of-type {
   margin-left: 15px;
+}
+
+h2 {
+  font-size: 3em;
+  line-height: 1.1;
+}
+
+footer ul li {
+  float: left;
 }
