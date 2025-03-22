@@ -109,6 +109,14 @@ h2 {
   line-height: 1.1;
 }
 
+input[type=text], textarea {
+  width: 500px;
+  height: 250px;
+  background-color: #4A6F6A;
+  border-radius: 5px;
+  resize: none;
+}
+
 footer ul li {
   float: left;
 }
