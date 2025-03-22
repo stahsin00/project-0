@@ -20,7 +20,7 @@ function Try() {
                 name="txt"
                 placeholder="Enter your ideas here..."
                 value={txt}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => setTxt(e.target.value)}
                 className="text-light-cream p-2 mb-15">
             </textarea>
         </div>

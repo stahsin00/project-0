@@ -21,7 +21,7 @@ function Features() {
                 <div className="card mb-5">
                     <h3 className="card-title">AI-Driven Pitch Builder</h3>
                     <p>Turn your rough notes into a polished pitch with AI support.</p>
-                    <a href="#">Get Started</a>
+                    <a href="#txt">Get Started</a>
                 </div>
             </section>
         </div>
