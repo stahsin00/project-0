@@ -1,7 +1,2 @@
-body {
-  background-color: #c7f2d3; /* Light minty green */
-  background-image: 
-    linear-gradient(rgba(255, 250, 240, 0.8) 1px, transparent 1px), /* Horizontal grid lines */
-    linear-gradient(90deg, rgba(255, 250, 240, 0.8) 1px, transparent 1px); /* Vertical grid lines */
-  background-size: 40px 40px; /* Adjust grid size */
-}
+@import "tailwindcss";
+
