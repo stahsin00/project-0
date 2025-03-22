@@ -1,6 +1,7 @@
 import fs from 'fs';
 import { google } from 'googleapis';
 import { generateSlideContent } from './openai.js';
+import { getThemeColors, getSlideLayout, createDecorations } from './theme.js';
 
 async function authenticate() {
   try {
@@ -22,44 +23,191 @@ async function authenticate() {
   }
 }
 
-async function createPresentation(authClient, content) {
-    try {
-      const slides = google.slides({ version: 'v1', auth: authClient });
+async function createPresentation(authClient, content, topic) {
+  try {
+    const slides = google.slides({ version: 'v1', auth: authClient });
+    const theme = getThemeColors(topic);
+    
+    const presentation = await slides.presentations.create({
+      requestBody: {
+        title: content.title
+      }
+    });
+    
+    const presentationId = presentation.data.presentationId;
+    console.log(`Presentation created with ID: ${presentationId}`);
+    
+    const presentationDetails = await slides.presentations.get({
+      presentationId: presentationId
+    });
+    
+    let requests = [];
+    
+    if (presentationDetails.data.slides && presentationDetails.data.slides.length > 0) {
+      const titleSlideId = presentationDetails.data.slides[0].objectId;
       
-      const presentation = await slides.presentations.create({
-        requestBody: {
-          title: content.title
+      requests = requests.concat(createDecorations(titleSlideId, theme, 'title'));
+      
+      requests.push({
+        updatePageProperties: {
+          objectId: titleSlideId,
+          fields: 'pageBackgroundFill.solidFill.color',
+          pageProperties: {
+            pageBackgroundFill: {
+              solidFill: {
+                color: theme.background
+              }
+            }
+          }
         }
       });
       
-      const presentationId = presentation.data.presentationId;
-      console.log(`Presentation created with ID: ${presentationId}`);
-      
-      const presentationDetails = await slides.presentations.get({
-        presentationId: presentationId
-      });
-      
-      let requests = [];
-      
-      if (presentationDetails.data.slides && presentationDetails.data.slides.length > 0) {
-        const titleSlideId = presentationDetails.data.slides[0].objectId;
+      requests.push(
+        {
+          createShape: {
+            objectId: 'titleTextBox',
+            shapeType: 'TEXT_BOX',
+            elementProperties: {
+              pageObjectId: titleSlideId,
+              size: {
+                width: { magnitude: 600, unit: 'PT' },
+                height: { magnitude: 120, unit: 'PT' }
+              },
+              transform: {
+                scaleX: 1,
+                scaleY: 1,
+                translateX: 50,
+                translateY: 100,
+                unit: 'PT'
+              }
+            }
+          }
+        },
+        {
+          insertText: {
+            objectId: 'titleTextBox',
+            insertionIndex: 0,
+            text: content.title
+          }
+        },
+        {
+          updateTextStyle: {
+            objectId: 'titleTextBox',
+            textRange: {
+              type: 'ALL'
+            },
+            style: {
+              fontSize: {
+                magnitude: 40,
+                unit: 'PT'
+              },
+              foregroundColor: {
+                opaqueColor: theme.primary
+              },
+              bold: true,
+              fontFamily: 'Montserrat'
+            },
+            fields: 'fontSize,foregroundColor,bold,fontFamily'
+          }
+        },
+        {
+          createShape: {
+            objectId: 'subtitleTextBox',
+            shapeType: 'TEXT_BOX',
+            elementProperties: {
+              pageObjectId: titleSlideId,
+              size: {
+                width: { magnitude: 600, unit: 'PT' },
+                height: { magnitude: 60, unit: 'PT' }
+              },
+              transform: {
+                scaleX: 1,
+                scaleY: 1,
+                translateX: 50,
+                translateY: 220,
+                unit: 'PT'
+              }
+            }
+          }
+        },
+        {
+          insertText: {
+            objectId: 'subtitleTextBox',
+            insertionIndex: 0,
+            text: content.subtitle
+          }
+        },
+        {
+          updateTextStyle: {
+            objectId: 'subtitleTextBox',
+            textRange: {
+              type: 'ALL'
+            },
+            style: {
+              fontSize: {
+                magnitude: 20,
+                unit: 'PT'
+              },
+              foregroundColor: {
+                opaqueColor: theme.secondary
+              },
+              fontFamily: 'Open Sans'
+            },
+            fields: 'fontSize,foregroundColor,fontFamily'
+          }
+        }
+      );
+    }
+    
+    if (content.slides && Array.isArray(content.slides)) {
+      content.slides.forEach((slide, index) => {
+        const slideId = `slide${index + 2}`;
+        const titleId = `title${slideId}`;
+        const contentId = `content${slideId}`;
+        const layout = getSlideLayout(index + 1, content.slides.length + 1);
+        
+        requests.push({
+          createSlide: {
+            objectId: slideId,
+            insertionIndex: index + 1,
+            slideLayoutReference: {
+              predefinedLayout: layout
+            }
+          }
+        });
+        
+        requests = requests.concat(createDecorations(slideId, theme, 'content'));
+        
+        requests.push({
+          updatePageProperties: {
+            objectId: slideId,
+            fields: 'pageBackgroundFill.solidFill.color',
+            pageProperties: {
+              pageBackgroundFill: {
+                solidFill: {
+                  color: theme.background
+                }
+              }
+            }
+          }
+        });
         
         requests.push(
           {
             createShape: {
-              objectId: 'titleTextBox',
+              objectId: titleId,
               shapeType: 'TEXT_BOX',
               elementProperties: {
-                pageObjectId: titleSlideId,
+                pageObjectId: slideId,
                 size: {
                   width: { magnitude: 600, unit: 'PT' },
-                  height: { magnitude: 100, unit: 'PT' }
+                  height: { magnitude: 50, unit: 'PT' }
                 },
                 transform: {
                   scaleX: 1,
                   scaleY: 1,
                   translateX: 50,
-                  translateY: 100,
+                  translateY: 30,
                   unit: 'PT'
                 }
               }
@@ -67,153 +215,62 @@ async function createPresentation(authClient, content) {
           },
           {
             insertText: {
-              objectId: 'titleTextBox',
+              objectId: titleId,
               insertionIndex: 0,
-              text: content.title
+              text: slide.title
             }
           },
           {
             updateTextStyle: {
-              objectId: 'titleTextBox',
+              objectId: titleId,
               textRange: {
                 type: 'ALL'
               },
               style: {
                 fontSize: {
-                  magnitude: 36,
+                  magnitude: 28,
                   unit: 'PT'
                 },
-                bold: true
-              },
-              fields: 'fontSize,bold'
-            }
-          },
-          {
-            createShape: {
-              objectId: 'subtitleTextBox',
-              shapeType: 'TEXT_BOX',
-              elementProperties: {
-                pageObjectId: titleSlideId,
-                size: {
-                  width: { magnitude: 600, unit: 'PT' },
-                  height: { magnitude: 60, unit: 'PT' }
+                foregroundColor: {
+                  opaqueColor: theme.primary
                 },
-                transform: {
-                  scaleX: 1,
-                  scaleY: 1,
-                  translateX: 50,
-                  translateY: 200,
-                  unit: 'PT'
-                }
-              }
-            }
-          },
-          {
-            insertText: {
-              objectId: 'subtitleTextBox',
-              insertionIndex: 0,
-              text: content.subtitle
-            }
-          },
-          {
-            updateTextStyle: {
-              objectId: 'subtitleTextBox',
-              textRange: {
-                type: 'ALL'
+                bold: true,
+                fontFamily: 'Montserrat'
               },
-              style: {
-                fontSize: {
-                  magnitude: 20,
-                  unit: 'PT'
-                }
-              },
-              fields: 'fontSize'
+              fields: 'fontSize,foregroundColor,bold,fontFamily'
             }
           }
         );
-      }
-      
-      if (content.slides && Array.isArray(content.slides)) {
-        content.slides.forEach((slide, index) => {
-          const slideId = `slide${index + 2}`;
-          const titleId = `title${slideId}`;
-          const contentId = `content${slideId}`;
+        
+        if (slide.content && Array.isArray(slide.content)) {
+          const bulletContent = slide.content.join('\\n• ');
           
-          requests.push({
-            createSlide: {
-              objectId: slideId,
-              insertionIndex: index + 1,
-              slideLayoutReference: {
-                predefinedLayout: 'BLANK'
-              }
-            }
-          });
+          let contentX = 50;
+          let contentY = 100;
+          let contentWidth = 600;
           
-          requests.push(
-            {
-              createShape: {
-                objectId: titleId,
-                shapeType: 'TEXT_BOX',
-                elementProperties: {
-                  pageObjectId: slideId,
-                  size: {
-                    width: { magnitude: 600, unit: 'PT' },
-                    height: { magnitude: 50, unit: 'PT' }
-                  },
-                  transform: {
-                    scaleX: 1,
-                    scaleY: 1,
-                    translateX: 50,
-                    translateY: 50,
-                    unit: 'PT'
-                  }
-                }
-              }
-            },
-            {
-              insertText: {
-                objectId: titleId,
-                insertionIndex: 0,
-                text: slide.title
-              }
-            },
-            {
-              updateTextStyle: {
-                objectId: titleId,
-                textRange: {
-                  type: 'ALL'
-                },
-                style: {
-                  fontSize: {
-                    magnitude: 24,
-                    unit: 'PT'
-                  },
-                  bold: true
-                },
-                fields: 'fontSize,bold'
-              }
-            }
-          );
-          
-          if (slide.content && Array.isArray(slide.content)) {
-            const bulletContent = slide.content.join('\\n• ');
+          if (layout === 'TITLE_AND_TWO_COLUMNS') {
+            contentWidth = 280;
+            
+            const rightColumnId = `rightColumn${slideId}`;
+            const rightColumnQuote = slide.content.length > 2 ? slide.content[0] : "Key Takeaway";
             
             requests.push(
               {
                 createShape: {
-                  objectId: contentId,
+                  objectId: rightColumnId,
                   shapeType: 'TEXT_BOX',
                   elementProperties: {
                     pageObjectId: slideId,
                     size: {
-                      width: { magnitude: 600, unit: 'PT' },
-                      height: { magnitude: 300, unit: 'PT' }
+                      width: { magnitude: 250, unit: 'PT' },
+                      height: { magnitude: 200, unit: 'PT' }
                     },
                     transform: {
                       scaleX: 1,
                       scaleY: 1,
-                      translateX: 50,
-                      translateY: 120,
+                      translateX: 400,
+                      translateY: 150,
                       unit: 'PT'
                     }
                   }
@@ -221,49 +278,234 @@ async function createPresentation(authClient, content) {
               },
               {
                 insertText: {
-                  objectId: contentId,
+                  objectId: rightColumnId,
                   insertionIndex: 0,
-                  text: `• ${bulletContent}`
+                  text: rightColumnQuote
                 }
               },
               {
                 updateTextStyle: {
-                  objectId: contentId,
+                  objectId: rightColumnId,
                   textRange: {
                     type: 'ALL'
                   },
                   style: {
                     fontSize: {
-                      magnitude: 18,
+                      magnitude: 24,
+                      unit: 'PT'
+                    },
+                    foregroundColor: {
+                      opaqueColor: theme.accent
+                    },
+                    italic: true,
+                    fontFamily: 'Georgia'
+                  },
+                  fields: 'fontSize,foregroundColor,italic,fontFamily'
+                }
+              },
+              {
+                createShape: {
+                  objectId: `decoration_quote_${slideId}`,
+                  shapeType: 'RECTANGLE',
+                  elementProperties: {
+                    pageObjectId: slideId,
+                    size: {
+                      width: { magnitude: 250, unit: 'PT' },
+                      height: { magnitude: 5, unit: 'PT' }
+                    },
+                    transform: {
+                      scaleX: 1,
+                      scaleY: 1,
+                      translateX: 400,
+                      translateY: 135,
                       unit: 'PT'
                     }
-                  },
-                  fields: 'fontSize'
+                  }
+                }
+              },
+              {
+                updateShapeProperties: {
+                  objectId: `decoration_quote_${slideId}`,
+                  fields: 'shapeBackgroundFill.solidFill.color',
+                  shapeProperties: {
+                    shapeBackgroundFill: {
+                      solidFill: {
+                        color: theme.accent
+                      }
+                    }
+                  }
                 }
               }
             );
           }
-        });
-      }
+          
+          requests.push(
+            {
+              createShape: {
+                objectId: contentId,
+                shapeType: 'TEXT_BOX',
+                elementProperties: {
+                  pageObjectId: slideId,
+                  size: {
+                    width: { magnitude: contentWidth, unit: 'PT' },
+                    height: { magnitude: 300, unit: 'PT' }
+                  },
+                  transform: {
+                    scaleX: 1,
+                    scaleY: 1,
+                    translateX: contentX,
+                    translateY: contentY,
+                    unit: 'PT'
+                  }
+                }
+              }
+            },
+            {
+              insertText: {
+                objectId: contentId,
+                insertionIndex: 0,
+                text: `• ${bulletContent}`
+              }
+            },
+            {
+              updateTextStyle: {
+                objectId: contentId,
+                textRange: {
+                  type: 'ALL'
+                },
+                style: {
+                  fontSize: {
+                    magnitude: 18,
+                    unit: 'PT'
+                  },
+                  foregroundColor: {
+                    opaqueColor: theme.text
+                  },
+                  fontFamily: 'Open Sans'
+                },
+                fields: 'fontSize,foregroundColor,fontFamily'
+              }
+            },
+            {
+              updateParagraphStyle: {
+                objectId: contentId,
+                textRange: {
+                  type: 'ALL'
+                },
+                style: {
+                  lineSpacing: 115,
+                  spaceAbove: {
+                    magnitude: 10,
+                    unit: 'PT'
+                  },
+                  spaceBelow: {
+                    magnitude: 10,
+                    unit: 'PT'
+                  }
+                },
+                fields: 'lineSpacing,spaceAbove,spaceBelow'
+              }
+            }
+          );
+        }
+      });
       
-      const batchSize = 20;
-      for (let i = 0; i < requests.length; i += batchSize) {
-        const batch = requests.slice(i, i + batchSize);
-        await slides.presentations.batchUpdate({
-          presentationId: presentationId,
-          requestBody: {
-            requests: batch
+      const thankYouSlideId = `slide${content.slides.length + 2}`;
+      requests.push({
+        createSlide: {
+          objectId: thankYouSlideId,
+          insertionIndex: content.slides.length + 1,
+          slideLayoutReference: {
+            predefinedLayout: 'TITLE_ONLY'
           }
-        });
-        console.log(`Processed batch ${Math.floor(i/batchSize) + 1} of ${Math.ceil(requests.length/batchSize)}`);
-      }
+        }
+      });
       
-      console.log('All slides created and populated with content');
-      return presentationId;
-    } catch (error) {
-      console.error('Failed to create or update presentation:', error.message);
-      throw error;
+      requests.push({
+        updatePageProperties: {
+          objectId: thankYouSlideId,
+          fields: 'pageBackgroundFill.solidFill.color',
+          pageProperties: {
+            pageBackgroundFill: {
+              solidFill: {
+                color: theme.primary
+              }
+            }
+          }
+        }
+      });
+      
+      requests.push(
+        {
+          createShape: {
+            objectId: `thankYouText`,
+            shapeType: 'TEXT_BOX',
+            elementProperties: {
+              pageObjectId: thankYouSlideId,
+              size: {
+                width: { magnitude: 600, unit: 'PT' },
+                height: { magnitude: 200, unit: 'PT' }
+              },
+              transform: {
+                scaleX: 1,
+                scaleY: 1,
+                translateX: 150,
+                translateY: 150,
+                unit: 'PT'
+              }
+            }
+          }
+        },
+        {
+          insertText: {
+            objectId: `thankYouText`,
+            insertionIndex: 0,
+            text: 'Thank You'
+          }
+        },
+        {
+          updateTextStyle: {
+            objectId: `thankYouText`,
+            textRange: {
+              type: 'ALL'
+            },
+            style: {
+              fontSize: {
+                magnitude: 60,
+                unit: 'PT'
+              },
+              foregroundColor: {
+                opaqueColor: {
+                  rgbColor: { red: 1, green: 1, blue: 1 }
+                }
+              },
+              bold: true,
+              fontFamily: 'Montserrat'
+            },
+            fields: 'fontSize,foregroundColor,bold,fontFamily'
+          }
+        }
+      );
     }
+    
+    const batchSize = 20;
+    for (let i = 0; i < requests.length; i += batchSize) {
+      const batch = requests.slice(i, i + batchSize);
+      await slides.presentations.batchUpdate({
+        presentationId: presentationId,
+        requestBody: {
+          requests: batch
+        }
+      });
+      console.log(`Processed batch ${Math.floor(i/batchSize) + 1} of ${Math.ceil(requests.length/batchSize)}`);
+    }
+    
+    console.log('All slides created and populated with content');
+    return presentationId;
+  } catch (error) {
+    console.error('Failed to create or update presentation:', error.message);
+    throw error;
+  }
 }
 
 async function exportAsPdf(authClient, presentationId) {
@@ -310,7 +552,7 @@ export async function createAndExportPresentation(topic) {
   try {
     const authClient = await authenticate();
     const slideContent = await generateSlideContent(topic);
-    const presentationId = await createPresentation(authClient, slideContent);
+    const presentationId = await createPresentation(authClient, slideContent, topic);
     
     const pdfPath = await exportAsPdf(authClient, presentationId);
     
