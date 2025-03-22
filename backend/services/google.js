@@ -245,7 +245,8 @@ async function createPresentation(authClient, content, topic) {
         const slideId = `slide${index + startingIndex + 1}`;
         const titleId = `title${slideId}`;
         const contentId = `content${slideId}`;
-        const layout = getSlideLayout(index + 1, content.slides.length + 1);
+        
+        const layout = slide.layout || getSlideLayout(index + 1, content.slides.length + 1);
         
         requests.push({
           createSlide: {

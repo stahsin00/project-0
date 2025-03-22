@@ -11,17 +11,15 @@ export async function generateSlideContent(topic) {
       messages: [
         {
           role: "system",
-          content: `You are an expert presentation designer who creates professional, visually engaging pitch deck content.
+          content: `You are an assistant that creates professional pitch deck style presentation content. Create complete content for a presentation including a title slide and multiple content slides.
           
-          You excel at:
-          1. Creating compelling headlines that capture attention
-          2. Writing concise bullet points that convey key information
-          3. Structuring presentations with logical flow
-          4. Incorporating memorable quotes or statistics
-          5. Adapting content style to match the presentation topic
+          Incorporate elements of this pitch framework naturally without making it feel formulaic:
+          - Introduction: audience assessment, relevance, impact, key takeaway
+          - Body: problem/solution, product details, benefits, market position, before/after comparison
+          - Conclusion: reinforced takeaway, next steps, contact details
           
-          For technical or business presentations, use precise language and data-driven points.
-          For creative or marketing presentations, use more evocative language and emotional appeals.`
+          BUT maintain variety in slide structure, order, and design. Don't make slides feel templated or repetitive.
+          Use different slide layouts throughout the presentation to maintain visual interest.`
         },
         {
           role: "user",
@@ -29,35 +27,29 @@ export async function generateSlideContent(topic) {
           
           Format your response as JSON with the following structure:
           {
-            "title": "Main presentation title - make it catchy and relevant",
-            "subtitle": "Presentation subtitle - add context or explain the value proposition",
-            "theme": "Suggested visual theme (tech, business, creative, health, etc.)",
+            "title": "Main presentation title",
+            "subtitle": "Presentation subtitle",
             "slides": [
               {
-                "title": "Slide title - clear and concise",
+                "title": "Slide title",
                 "content": ["Bullet point 1", "Bullet point 2", "Bullet point 3"],
-                "notes": "Optional presenter notes with key talking points"
-              },
-              // More slides following the same structure
+                "layout": "TITLE_ONLY|TITLE_AND_BODY|TITLE_AND_TWO_COLUMNS|SECTION_HEADER|BLANK"
+              }
             ]
           }
           
-          Create a professional pitch deck that follows this structure:
+          Create 8-12 slides for an 8-minute presentation. Be creative with:
+          - Varied slide layouts (don't use the same layout for consecutive slides)
+          - Different numbers of bullet points based on content importance
+          - Creative slide titles that engage the audience
+          - Occasional quote slides or visual instruction slides
           
-          1. Title slide (generated automatically)
-          2. Problem/Opportunity - What problem does this solve? What opportunity exists?
-          3. Solution Overview - How does your idea solve this problem?
-          4. Features/Benefits - What are the key features and their benefits?
-          5. Market Analysis - Who is this for? How big is the opportunity?
-          6. Business Model - How will this make money?
-          7. Competition - How does this compare to alternatives?
-          8. Roadmap - What are the next steps?
-          9. Team/Resources - What's needed to make this successful?
-          10. Call to Action - What should the audience do next?
+          For variety, you can also include:
+          - Data visualization suggestions (describe what chart would work)
+          - Slides with just a powerful statement or question
+          - Comparison slide layouts
           
-          Be concise - limit bullets to 3-5 per slide, with each bullet being 1-2 lines max.
-          Include at least one memorable quote, statistic or key takeaway that could be highlighted.
-          Make the content feel cohesive and well-structured.`
+          Make sure content flows naturally while incorporating pitch framework elements.`
         }
       ],
       response_format: { type: "json_object" }
@@ -65,35 +57,17 @@ export async function generateSlideContent(topic) {
 
     const content = JSON.parse(response.choices[0].message.content);
     console.log('Generated presentation structure with multiple slides');
-    
-    if (!content.theme) content.theme = "business";
-    if (!content.slides || !Array.isArray(content.slides)) {
-      content.slides = [
-        {
-          title: "Overview",
-          content: ["Key aspects of this presentation", "Main benefits and features", "Next steps and call to action"]
-        }
-      ];
-    }
-    
-    content.slides = content.slides.map(slide => {
-      if (!slide.content || !Array.isArray(slide.content) || slide.content.length === 0) {
-        slide.content = ["Point 1", "Point 2", "Point 3"];
-      }
-      return slide;
-    });
-    
     return content;
   } catch (error) {
     console.error('Failed to generate content with OpenAI:', error.message);
     return {
       title: `Presentation: ${topic}`,
       subtitle: 'Generated presentation',
-      theme: "business",
       slides: [
         {
           title: "Overview",
-          content: ["Failed to generate complete content", "Please try again later"]
+          content: ["Failed to generate complete content", "Please try again later"],
+          layout: "TITLE_AND_BODY"
         }
       ]
     };
