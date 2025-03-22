@@ -1,5 +1,6 @@
 import fs from 'fs';
 import { google } from 'googleapis';
+import { generateSlideContent } from './openai.js';
 
 async function authenticate() {
   try {
@@ -21,42 +22,138 @@ async function authenticate() {
   }
 }
 
-async function createPresentation(authClient) {
-  try {
-    const slides = google.slides({ version: 'v1', auth: authClient });
-    
-    const presentation = await slides.presentations.create({
-      requestBody: {
-        title: 'Generated Presentation'
+async function createPresentation(authClient, content) {
+    try {
+      const slides = google.slides({ version: 'v1', auth: authClient });
+      
+      // First, create a new presentation
+      const presentation = await slides.presentations.create({
+        requestBody: {
+          title: content.title
+        }
+      });
+      
+      const presentationId = presentation.data.presentationId;
+      console.log(`Presentation created with ID: ${presentationId}`);
+      
+      const presentationDetails = await slides.presentations.get({
+        presentationId: presentationId
+      });
+      
+      if (presentationDetails.data.slides && presentationDetails.data.slides.length > 0) {
+        console.log('First slide structure:', JSON.stringify(presentationDetails.data.slides[0], null, 2));
       }
-    });
-    
-    const presentationId = presentation.data.presentationId;
-    console.log(`Presentation created with ID: ${presentationId}`);
-    
-    await slides.presentations.batchUpdate({
-      presentationId: presentationId,
-      requestBody: {
-        requests: [
-          {
-            createSlide: {
-              objectId: 'slide2',
-              insertionIndex: 1,
-              slideLayoutReference: {
-                predefinedLayout: 'BLANK'
+      
+      const requests = [
+        {
+          createShape: {
+            objectId: 'titleTextBox',
+            shapeType: 'TEXT_BOX',
+            elementProperties: {
+              pageObjectId: presentationDetails.data.slides[0].objectId,
+              size: {
+                width: { magnitude: 600, unit: 'PT' },
+                height: { magnitude: 100, unit: 'PT' }
+              },
+              transform: {
+                scaleX: 1,
+                scaleY: 1,
+                translateX: 50,
+                translateY: 100,
+                unit: 'PT'
               }
             }
           }
-        ]
-      }
-    });
-    
-    console.log('Additional slide added');
-    return presentationId;
-  } catch (error) {
-    console.error('Failed to create presentation:', error.message);
-    throw error;
-  }
+        },
+        {
+          insertText: {
+            objectId: 'titleTextBox',
+            insertionIndex: 0,
+            text: content.title
+          }
+        },
+        {
+          updateTextStyle: {
+            objectId: 'titleTextBox',
+            textRange: {
+              type: 'ALL'
+            },
+            style: {
+              fontSize: {
+                magnitude: 36,
+                unit: 'PT'
+              },
+              bold: true
+            },
+            fields: 'fontSize,bold'
+          }
+        },
+        {
+          createShape: {
+            objectId: 'subtitleTextBox',
+            shapeType: 'TEXT_BOX',
+            elementProperties: {
+              pageObjectId: presentationDetails.data.slides[0].objectId,
+              size: {
+                width: { magnitude: 600, unit: 'PT' },
+                height: { magnitude: 60, unit: 'PT' }
+              },
+              transform: {
+                scaleX: 1,
+                scaleY: 1,
+                translateX: 50,
+                translateY: 200,
+                unit: 'PT'
+              }
+            }
+          }
+        },
+        {
+          insertText: {
+            objectId: 'subtitleTextBox',
+            insertionIndex: 0,
+            text: content.subtitle
+          }
+        },
+        {
+          updateTextStyle: {
+            objectId: 'subtitleTextBox',
+            textRange: {
+              type: 'ALL'
+            },
+            style: {
+              fontSize: {
+                magnitude: 20,
+                unit: 'PT'
+              }
+            },
+            fields: 'fontSize'
+          }
+        },
+        {
+          createSlide: {
+            objectId: 'slide2',
+            insertionIndex: 1,
+            slideLayoutReference: {
+              predefinedLayout: 'BLANK'
+            }
+          }
+        }
+      ];
+      
+      await slides.presentations.batchUpdate({
+        presentationId: presentationId,
+        requestBody: {
+          requests: requests
+        }
+      });
+      
+      console.log('Slide content updated with OpenAI generated content');
+      return presentationId;
+    } catch (error) {
+      console.error('Failed to create or update presentation:', error.message);
+      throw error;
+    }
 }
 
 async function exportAsPdf(authClient, presentationId) {
@@ -99,10 +196,11 @@ async function exportAsPdf(authClient, presentationId) {
   }
 }
 
-export async function createAndExportPresentation() {
+export async function createAndExportPresentation(topic) {
   try {
     const authClient = await authenticate();
-    const presentationId = await createPresentation(authClient);
+    const slideContent = await generateSlideContent(topic);
+    const presentationId = await createPresentation(authClient, slideContent);
     
     const pdfPath = await exportAsPdf(authClient, presentationId);
     
