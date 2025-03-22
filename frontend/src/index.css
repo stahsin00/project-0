@@ -70,7 +70,7 @@ button {
   transition: border-color 0.25s;
 }
 button:hover {
-  border-color: white;
+  border-color: #4A6F6A;
 }
 
 /* custom css */
