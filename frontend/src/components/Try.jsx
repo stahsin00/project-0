@@ -8,6 +8,7 @@ function Try() {
     async function HandleSubmit(e) {
         e.preventDefault();
         if (loading) return;
+        setLoading(true);
 
         // "gen" for "generate response"
         // const apiUrl = 'http://localhost:3000/api/generate';
@@ -17,22 +18,28 @@ function Try() {
         //     setAppState({ loading: false, gen: gen.slice(0,4) });
         // });
 
-        const response = await fetch(
-        'http://localhost:3000/api/generate',
-            {
-              method: 'POST',
-              body: JSON.stringify({ "topic": txt }),
-              headers: {
-                'Content-Type': 'application/json',
-              },
-            }
-        );
-
-        const blob = await response.blob();
-            
-        const url = URL.createObjectURL(blob);
-        setPdfUrl(url);
-        setTxt("");
+        try {
+            const response = await fetch(
+            'http://localhost:3000/api/generate',
+                {
+                    method: 'POST',
+                    body: JSON.stringify({ "topic": txt }),
+                    headers: {
+                    'Content-Type': 'application/json',
+                    },
+                }
+            );
+    
+            const blob = await response.blob();
+                
+            const url = URL.createObjectURL(blob);
+            setPdfUrl(url);
+        } catch (e) {
+            console.log(e);
+        } finally {
+            setTxt("");
+            setLoading(false);
+        }
     }
 
     return (
