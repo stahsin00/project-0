@@ -1,7 +1,15 @@
 import { generateDynamicPalette } from './colorPalette.js';
+import { getFontTheme } from './fontSelection.js';
 
 export function getThemeColors(topic) {
-  return generateDynamicPalette(topic);
+  const colorPalette = generateDynamicPalette(topic);
+  
+  const fontTheme = getFontTheme(topic);
+  
+  return {
+    ...colorPalette,
+    fonts: fontTheme
+  };
 }
 
 export function getSlideLayout(slideIndex, totalSlides) {
@@ -22,57 +30,6 @@ export function createDecorations(slideId, theme, position) {
   const decorations = [];
   
   if (position === 'title') {
-    decorations.push({
-      createShape: {
-        objectId: `decoration_${slideId}_1`,
-        shapeType: 'ELLIPSE',
-        elementProperties: {
-          pageObjectId: slideId,
-          size: {
-            width: { magnitude: 200, unit: 'PT' },
-            height: { magnitude: 200, unit: 'PT' }
-          },
-          transform: {
-            scaleX: 1,
-            scaleY: 1,
-            translateX: 400,
-            translateY: 50,
-            unit: 'PT'
-          }
-        }
-      }
-    });
-    
-    const alphaValue = 0.3;
-    
-    decorations.push({
-      updateShapeProperties: {
-        objectId: `decoration_${slideId}_1`,
-        fields: 'shapeBackgroundFill.solidFill.color',
-        shapeProperties: {
-          shapeBackgroundFill: {
-            solidFill: {
-              color: theme.accent
-            }
-          }
-        }
-      }
-    });
-    
-    decorations.push({
-      updateShapeProperties: {
-        objectId: `decoration_${slideId}_1`,
-        fields: 'shapeBackgroundFill.solidFill.alpha',
-        shapeProperties: {
-          shapeBackgroundFill: {
-            solidFill: {
-              alpha: alphaValue
-            }
-          }
-        }
-      }
-    });
-    
     decorations.push({
       createShape: {
         objectId: `decoration_${slideId}_2`,
@@ -107,6 +64,41 @@ export function createDecorations(slideId, theme, position) {
         }
       }
     });
+    
+    decorations.push({
+      createShape: {
+        objectId: `decoration_${slideId}_3`,
+        shapeType: 'RECTANGLE',
+        elementProperties: {
+          pageObjectId: slideId,
+          size: {
+            width: { magnitude: 200, unit: 'PT' },
+            height: { magnitude: 4, unit: 'PT' }
+          },
+          transform: {
+            scaleX: 1,
+            scaleY: 1,
+            translateX: 50,
+            translateY: 50,
+            unit: 'PT'
+          }
+        }
+      }
+    });
+    
+    decorations.push({
+      updateShapeProperties: {
+        objectId: `decoration_${slideId}_3`,
+        fields: 'shapeBackgroundFill.solidFill.color',
+        shapeProperties: {
+          shapeBackgroundFill: {
+            solidFill: {
+              color: theme.accent
+            }
+          }
+        }
+      }
+    });
   } else {
     decorations.push({
       createShape: {
@@ -116,13 +108,13 @@ export function createDecorations(slideId, theme, position) {
           pageObjectId: slideId,
           size: {
             width: { magnitude: 100, unit: 'PT' },
-            height: { magnitude: 10, unit: 'PT' }
+            height: { magnitude: 4, unit: 'PT' }
           },
           transform: {
             scaleX: 1,
             scaleY: 1,
-            translateX: 600,
-            translateY: 20,
+            translateX: 50,
+            translateY: 85,
             unit: 'PT'
           }
         }
@@ -132,41 +124,6 @@ export function createDecorations(slideId, theme, position) {
     decorations.push({
       updateShapeProperties: {
         objectId: `decoration_${slideId}_1`,
-        fields: 'shapeBackgroundFill.solidFill.color',
-        shapeProperties: {
-          shapeBackgroundFill: {
-            solidFill: {
-              color: theme.primary
-            }
-          }
-        }
-      }
-    });
-    
-    decorations.push({
-      createShape: {
-        objectId: `decoration_${slideId}_3`,
-        shapeType: 'ELLIPSE',
-        elementProperties: {
-          pageObjectId: slideId,
-          size: {
-            width: { magnitude: 15, unit: 'PT' },
-            height: { magnitude: 15, unit: 'PT' }
-          },
-          transform: {
-            scaleX: 1,
-            scaleY: 1,
-            translateX: 585,
-            translateY: 20,
-            unit: 'PT'
-          }
-        }
-      }
-    });
-    
-    decorations.push({
-      updateShapeProperties: {
-        objectId: `decoration_${slideId}_3`,
         fields: 'shapeBackgroundFill.solidFill.color',
         shapeProperties: {
           shapeBackgroundFill: {

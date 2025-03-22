@@ -71,13 +71,13 @@ async function createPresentation(authClient, content, topic) {
               pageObjectId: titleSlideId,
               size: {
                 width: { magnitude: 600, unit: 'PT' },
-                height: { magnitude: 120, unit: 'PT' }
+                height: { magnitude: 200, unit: 'PT' }
               },
               transform: {
                 scaleX: 1,
                 scaleY: 1,
-                translateX: 50,
-                translateY: 100,
+                translateX: 60,
+                translateY: 180,
                 unit: 'PT'
               }
             }
@@ -98,70 +98,151 @@ async function createPresentation(authClient, content, topic) {
             },
             style: {
               fontSize: {
-                magnitude: 40,
+                magnitude: 44,
                 unit: 'PT'
               },
               foregroundColor: {
                 opaqueColor: theme.primary
               },
               bold: true,
-              fontFamily: 'Montserrat'
+              fontFamily: theme.fonts.titleFont
             },
             fields: 'fontSize,foregroundColor,bold,fontFamily'
           }
-        },
-        {
-          createShape: {
-            objectId: 'subtitleTextBox',
-            shapeType: 'TEXT_BOX',
-            elementProperties: {
-              pageObjectId: titleSlideId,
-              size: {
-                width: { magnitude: 600, unit: 'PT' },
-                height: { magnitude: 60, unit: 'PT' }
-              },
-              transform: {
-                scaleX: 1,
-                scaleY: 1,
-                translateX: 50,
-                translateY: 220,
-                unit: 'PT'
+        }
+      );
+      
+      if (content.subtitle) {
+        const overviewSlideId = 'overviewSlide';
+        requests.push({
+          createSlide: {
+            objectId: overviewSlideId,
+            insertionIndex: 1,
+            slideLayoutReference: {
+              predefinedLayout: 'TITLE_AND_BODY'
+            }
+          }
+        });
+        
+        requests = requests.concat(createDecorations(overviewSlideId, theme, 'content'));
+        
+        requests.push({
+          updatePageProperties: {
+            objectId: overviewSlideId,
+            fields: 'pageBackgroundFill.solidFill.color',
+            pageProperties: {
+              pageBackgroundFill: {
+                solidFill: {
+                  color: theme.background
+                }
               }
             }
           }
-        },
-        {
-          insertText: {
-            objectId: 'subtitleTextBox',
-            insertionIndex: 0,
-            text: content.subtitle
-          }
-        },
-        {
-          updateTextStyle: {
-            objectId: 'subtitleTextBox',
-            textRange: {
-              type: 'ALL'
-            },
-            style: {
-              fontSize: {
-                magnitude: 20,
-                unit: 'PT'
+        });
+        
+        requests.push(
+          {
+            createShape: {
+              objectId: 'overviewTitle',
+              shapeType: 'TEXT_BOX',
+              elementProperties: {
+                pageObjectId: overviewSlideId,
+                size: {
+                  width: { magnitude: 600, unit: 'PT' },
+                  height: { magnitude: 50, unit: 'PT' }
+                },
+                transform: {
+                  scaleX: 1,
+                  scaleY: 1,
+                  translateX: 50,
+                  translateY: 30,
+                  unit: 'PT'
+                }
+              }
+            }
+          },
+          {
+            insertText: {
+              objectId: 'overviewTitle',
+              insertionIndex: 0,
+              text: 'Overview'
+            }
+          },
+          {
+            updateTextStyle: {
+              objectId: 'overviewTitle',
+              textRange: {
+                type: 'ALL'
               },
-              foregroundColor: {
-                opaqueColor: theme.secondary
+              style: {
+                fontSize: {
+                  magnitude: 28,
+                  unit: 'PT'
+                },
+                foregroundColor: {
+                  opaqueColor: theme.primary
+                },
+                bold: true,
+                fontFamily: theme.fonts.titleFont
               },
-              fontFamily: 'Open Sans'
-            },
-            fields: 'fontSize,foregroundColor,fontFamily'
+              fields: 'fontSize,foregroundColor,bold,fontFamily'
+            }
+          },
+          {
+            createShape: {
+              objectId: 'overviewContent',
+              shapeType: 'TEXT_BOX',
+              elementProperties: {
+                pageObjectId: overviewSlideId,
+                size: {
+                  width: { magnitude: 600, unit: 'PT' },
+                  height: { magnitude: 300, unit: 'PT' }
+                },
+                transform: {
+                  scaleX: 1,
+                  scaleY: 1,
+                  translateX: 50,
+                  translateY: 100,
+                  unit: 'PT'
+                }
+              }
+            }
+          },
+          {
+            insertText: {
+              objectId: 'overviewContent',
+              insertionIndex: 0,
+              text: content.subtitle
+            }
+          },
+          {
+            updateTextStyle: {
+              objectId: 'overviewContent',
+              textRange: {
+                type: 'ALL'
+              },
+              style: {
+                fontSize: {
+                  magnitude: 20,
+                  unit: 'PT'
+                },
+                foregroundColor: {
+                  opaqueColor: theme.text
+                },
+                fontFamily: theme.fonts.bodyFont
+              },
+              fields: 'fontSize,foregroundColor,fontFamily'
+            }
           }
-        }
-      );
+        );
+      }
     }
+    
+    const startingIndex = content.subtitle ? 2 : 1;
     
     if (content.slides && Array.isArray(content.slides)) {
       content.slides.forEach((slide, index) => {
-        const slideId = `slide${index + 2}`;
+        const slideId = `slide${index + startingIndex + 1}`;
         const titleId = `title${slideId}`;
         const contentId = `content${slideId}`;
         const layout = getSlideLayout(index + 1, content.slides.length + 1);
@@ -169,7 +250,7 @@ async function createPresentation(authClient, content, topic) {
         requests.push({
           createSlide: {
             objectId: slideId,
-            insertionIndex: index + 1,
+            insertionIndex: index + startingIndex,
             slideLayoutReference: {
               predefinedLayout: layout
             }
@@ -235,7 +316,7 @@ async function createPresentation(authClient, content, topic) {
                   opaqueColor: theme.primary
                 },
                 bold: true,
-                fontFamily: 'Montserrat'
+                fontFamily: theme.fonts.titleFont
               },
               fields: 'fontSize,foregroundColor,bold,fontFamily'
             }
@@ -298,7 +379,7 @@ async function createPresentation(authClient, content, topic) {
                       opaqueColor: theme.accent
                     },
                     italic: true,
-                    fontFamily: 'Georgia'
+                    fontFamily: theme.fonts.accentFont
                   },
                   fields: 'fontSize,foregroundColor,italic,fontFamily'
                 }
@@ -381,7 +462,7 @@ async function createPresentation(authClient, content, topic) {
                   foregroundColor: {
                     opaqueColor: theme.text
                   },
-                  fontFamily: 'Open Sans'
+                  fontFamily: theme.fonts.bodyFont
                 },
                 fields: 'fontSize,foregroundColor,fontFamily'
               }
@@ -410,11 +491,13 @@ async function createPresentation(authClient, content, topic) {
         }
       });
       
-      const thankYouSlideId = `slide${content.slides.length + 2}`;
+      const thankYouSlideIndex = content.slides.length + (content.subtitle ? 2 : 1);
+      const thankYouSlideId = `slide${thankYouSlideIndex + 1}`;
+      
       requests.push({
         createSlide: {
           objectId: thankYouSlideId,
-          insertionIndex: content.slides.length + 1,
+          insertionIndex: thankYouSlideIndex,
           slideLayoutReference: {
             predefinedLayout: 'TITLE_ONLY'
           }
@@ -480,7 +563,7 @@ async function createPresentation(authClient, content, topic) {
                 }
               },
               bold: true,
-              fontFamily: 'Montserrat'
+              fontFamily: theme.fonts.titleFont
             },
             fields: 'fontSize,foregroundColor,bold,fontFamily'
           }

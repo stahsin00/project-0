@@ -10,7 +10,7 @@ export function rgbToSlides(r, g, b) {
   
   export function hexToSlides(hex) {
     hex = hex.replace('#', '');
-
+    
     const r = parseInt(hex.substring(0, 2), 16);
     const g = parseInt(hex.substring(2, 4), 16);
     const b = parseInt(hex.substring(4, 6), 16);
@@ -228,18 +228,35 @@ export function rgbToSlides(r, g, b) {
   }
   
   function generateBackgroundAndText(primary) {
-    const useTint = Math.random() > 0.4;
+    const useDarkMode = Math.random() > 0.5;
     
-    const background = useTint 
-      ? { h: primary.h, s: randomInRange(2, 8), l: randomInRange(96, 99) }
-      : { h: 0, s: 0, l: 100 };
-    
-    const usePrimaryForText = Math.random() > 0.5;
-    const text = usePrimaryForText
-      ? { h: primary.h, s: randomInRange(10, 30), l: randomInRange(10, 20) }
-      : { h: 0, s: 0, l: 10 };
-    
-    return { background, text };
+    if (useDarkMode) {
+      const useTint = Math.random() > 0.4;
+      
+      const background = useTint 
+        ? { h: primary.h, s: randomInRange(20, 40), l: randomInRange(8, 15) }
+        : { h: 0, s: 0, l: 5 };
+      
+      const usePrimaryForText = Math.random() > 0.5;
+      const text = usePrimaryForText
+        ? { h: primary.h, s: randomInRange(60, 90), l: randomInRange(80, 90) }
+        : { h: 0, s: 0, l: 95 }; // Near white
+      
+      return { background, text, isDarkMode: true };
+    } else {
+      const useTint = Math.random() > 0.4;
+      
+      const background = useTint 
+        ? { h: primary.h, s: randomInRange(2, 8), l: randomInRange(96, 99) }
+        : { h: 0, s: 0, l: 100 };
+      
+      const usePrimaryForText = Math.random() > 0.5;
+      const text = usePrimaryForText
+        ? { h: primary.h, s: randomInRange(10, 30), l: randomInRange(10, 20) }
+        : { h: 0, s: 0, l: 10 };
+      
+      return { background, text, isDarkMode: false };
+    }
   }
   
   export function generateDynamicPalette(topic) {
@@ -258,14 +275,26 @@ export function rgbToSlides(r, g, b) {
     
     const colorScheme = selectedScheme(baseColors);
     
-    const { background, text } = generateBackgroundAndText(colorScheme.primary);
+    const { background, text, isDarkMode } = generateBackgroundAndText(colorScheme.primary);
+    
+    if (isDarkMode) {
+      colorScheme.primary.s = Math.min(100, colorScheme.primary.s + 10);
+      colorScheme.primary.l = Math.min(70, colorScheme.primary.l + 15);
+      
+      colorScheme.secondary.s = Math.min(100, colorScheme.secondary.s + 10);
+      colorScheme.secondary.l = Math.min(70, colorScheme.secondary.l + 15);
+      
+      colorScheme.accent.s = Math.min(100, colorScheme.accent.s + 10);
+      colorScheme.accent.l = Math.min(70, colorScheme.accent.l + 15);
+    }
     
     return {
       primary: hslToSlides(colorScheme.primary.h, colorScheme.primary.s, colorScheme.primary.l),
       secondary: hslToSlides(colorScheme.secondary.h, colorScheme.secondary.s, colorScheme.secondary.l),
       accent: hslToSlides(colorScheme.accent.h, colorScheme.accent.s, colorScheme.accent.l),
       background: hslToSlides(background.h, background.s, background.l),
-      text: hslToSlides(text.h, text.s, text.l)
+      text: hslToSlides(text.h, text.s, text.l),
+      isDarkMode: isDarkMode // Include mode flag for other parts of the app
     };
   }
   
