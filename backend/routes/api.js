@@ -1,30 +1,31 @@
-import "dotenv/config.js";
-import express from "express";
-import fs from "fs";
-import { createAndExportPresentation } from "../services/google.js";
+import express from 'express';
+import { createAndExportPresentation } from '../services/google.js';
+import fs from 'fs';
 
 const router = express.Router();
 
 router.post('/generate', async (req, res) => {
     try {
-        if (!req.body.topic) {
-            return res.status(400).json({ message: 'Topic is required in the request body' });
+        const { topic } = req.body;
+        
+        if (!topic) {
+            return res.status(400).json({ error: 'Topic is required' });
         }
-
-        const topic = req.body.topic;
-
+        
         const pdfPath = await createAndExportPresentation(topic);
         
         const pdfBuffer = fs.readFileSync(pdfPath);
         
+        const safeFilename = encodeURIComponent(`presentation-${topic}.pdf`);
+        
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `inline; filename="presentation-${topic}.pdf"`);
+        res.setHeader('Content-Disposition', `inline; filename="${safeFilename}"`);
         res.setHeader('Content-Length', pdfBuffer.length);
         
-        res.send(pdfBuffer);
+        res.status(200).send(pdfBuffer);
     } catch (error) {
         console.error('Error generating slides:', error);
-        res.status(500).json({ message: 'Error Generating Presentation', error: error.message });
+        res.status(500).json({ error: 'Failed to generate presentation', details: error.message });
     }
 });
 
