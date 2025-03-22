@@ -2,9 +2,12 @@ import { React, useState } from "react";
 
 function Try() {
     const [txt, setTxt] = useState("");
+    const [pdfUrl, setPdfUrl] = useState(null);
+    const [loading, setLoading] = useState(false);
 
     async function HandleSubmit(e) {
         e.preventDefault();
+        if (loading) return;
 
         // "gen" for "generate response"
         // const apiUrl = 'http://localhost:3000/api/generate';
@@ -25,9 +28,11 @@ function Try() {
             }
         );
 
+        const blob = await response.blob();
+            
+        const url = URL.createObjectURL(blob);
+        setPdfUrl(url);
         setTxt("");
-        const result = await response.json();
-        console.log(result);
     }
 
     return (
@@ -59,6 +64,17 @@ function Try() {
                 className="w-50 h-full bg-dusty-blue text-white rounded-lg px-4 py-2 mb-10"
                 >Submit Pitch</button>
             </form>
+
+            {pdfUrl && (
+                <div className="w-full mx-auto h-screen bg-white overflow-hidden">
+                    <iframe
+                        src={`${pdfUrl}#view=FitH&pagemode=none&toolbar=0&navpanes=0`}
+                        title="PDF Presentation"
+                        className="w-full h-full"
+                        style={{border: 'none'}}
+                    ></iframe>
+                </div>
+            )}
         </div>
     );
 }
