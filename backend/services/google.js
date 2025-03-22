@@ -243,7 +243,7 @@ async function createPresentation(authClient, content, topic) {
         );
         
         if (slide.content && Array.isArray(slide.content)) {
-          const bulletContent = slide.content.join('\\n• ');
+          const bulletContent = slide.content.join('\n• ');
           
           let contentX = 50;
           let contentY = 100;
